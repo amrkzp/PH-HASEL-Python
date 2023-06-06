@@ -40,8 +40,8 @@ Question: where do initial values for Q, p and alpha come from? [Alpha initial c
 
 #------------------------------------------------------------------------------------------------------------------------#
 import time
-import geometry3 as geometry #CHANGE FOR TENSORS
-import energy2 as energy
+import geometry.geometry3 as geometry #CHANGE FOR TENSORS
+import energy.energy2 as energy
 import numpy as np
 import parameters
 # import torch
@@ -120,10 +120,9 @@ def update_open_loop_state(alpha, p, Q, Lv, Lp, A, alpha_max, alpha0, m, r, b, k
     return alpha_dot, p_dot, Q_dot, q
 
 # @profile
-def run_open_loop(total_time, time_step, bias, amp, freq, alpha, p, Q, Lv, Lp, A, alpha_max, alpha0, m, r, b, k):
+# Run open loop model with input voltage V
+def run_open_loop(total_time, time_step, V, alpha, p, Q, Lv, Lp, A, alpha_max, alpha0, m, r, b, k):
     num_iterations = round(total_time / time_step)
-    time = np.arange(0, total_time, time_step) #Starts from t = 0
-    V = bias + amp * np.sin(2 * np.pi * freq * time)
     # print(f"V = {V}") #Debug
     q_out = np.zeros(num_iterations)
 
@@ -171,12 +170,17 @@ def run_open_loop(total_time, time_step, bias, amp, freq, alpha, p, Q, Lv, Lp, A
         # gc.collect() #Forcing garbage collector for mem cleanup
 
     del V
-    del time
     return q_out #, alpha_dot_out, p_dot_out, Q_dot_out, p_out, Q_out, alpha_out #optionally collecting more data
 
 
 #____________________Testing_____________________________________#
 
+def generate_sine_chirp(total_time, time_step, freq, bias, amp):
+    time = np.arange(0, total_time, time_step) #Starts from t = 0
+    V = bias + amp * np.sin(2 * np.pi * freq * time)
+    return V
+
+#Test model with a sine chirp
 def test():
     alpha_0 = geometry.get_alpha0() #NUMPY float64
     # alpha_init = torch.tensor(alpha_0+1e-4, dtype=float, requires_grad=True) #CHANGE FOR TENSORS
@@ -202,16 +206,22 @@ def test():
     V_amp = 6000
     bias = 3000
     freq = 0.1
+    
     sim_time = 20
     time_step = 0.0001
+    
+    V = generate_sine_chirp(sim_time, time_step, freq, bias, V_amp)
 
-    q_out = run_open_loop(total_time=sim_time, time_step=time_step, bias=bias, amp=V_amp, freq=freq, alpha=alpha_init, p=p_init, Q=Q_init, Lv=Lv, Lp=Lp, A=A, alpha_max=alpha_max, alpha0=alpha_0, m=m, r=r, b=b, k=k)
+    q_out = run_open_loop(total_time=sim_time, time_step=time_step, V=V, alpha=alpha_init, p=p_init, Q=Q_init, Lv=Lv, Lp=Lp, A=A, alpha_max=alpha_max, alpha0=alpha_0, m=m, r=r, b=b, k=k)
     print(f"q_out:{q_out[-1]}")
 
     np.savetxt('modeldata.txt', q_out, delimiter=',') #Exporting data to file
 
     end = time.time()
     print(end - start)
+
+if __name__ == '__main__':
+    test()
 
 #PSUtil matches mprof.
 #Top & Activity monitor will show much higher mem usage for tensors (bc memory being reserved for Python interpreter process)
