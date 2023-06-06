@@ -59,11 +59,11 @@ start = time.time()
 def update_open_loop_state(alpha, p, Q, Lv, Lp, A, alpha_max, alpha0, m, r, b, k, debug):
     #First check if alpha is out of the permissible range, if so, correct it
     if alpha.item() > alpha_max.item():
-        print("FIRED")
+        # print("FIRED")
         alpha = np.copy(alpha_max)
         
     elif alpha.item() < alpha0.item():
-        print("FIRED")
+        # print("FIRED")
         alpha = np.copy(alpha0)
 
     #Get lp (length of unzipped region of pouch), le (length of zipped region of pouch), q (displacement) and their derivatives wrt alpha 
@@ -127,7 +127,7 @@ def run_open_loop(total_time, time_step, bias, amp, freq, alpha, p, Q, Lv, Lp, A
     # print(f"V = {V}") #Debug
     q_out = np.zeros(num_iterations)
 
-	#Optional arrays to track more data:
+    #Optional arrays to track more data:
     # alpha_dot_out = np.zeros(num_iterations)
     # p_dot_out = np.zeros(num_iterations)
     # Q_dot_out = np.zeros(num_iterations)
@@ -151,7 +151,7 @@ def run_open_loop(total_time, time_step, bias, amp, freq, alpha, p, Q, Lv, Lp, A
         p += p_dot * time_step
         Q += (Q_dot + V[i]/r) * time_step
         
-		#Optionally tracking more data:
+        #Optionally tracking more data:
         # alpha_dot_out[i] = alpha_dot
         # p_dot_out[i] = p_dot
         # Q_dot_out[i] = Q_dot
@@ -177,40 +177,41 @@ def run_open_loop(total_time, time_step, bias, amp, freq, alpha, p, Q, Lv, Lp, A
 
 #____________________Testing_____________________________________#
 
-alpha_0 = geometry.get_alpha0() #NUMPY float64
-# alpha_init = torch.tensor(alpha_0+1e-4, dtype=float, requires_grad=True) #For geometry1 and energy1
-# alpha_0 = torch.clone(alpha_init) #For geometry1 and energy1
-alpha_init = np.array(alpha_0+1e-4, dtype=np.float64)
-alpha_0 = np.copy(alpha_init)
-p_init = 0
-Q_init = 0
-params = parameters.param
-Lv = geometry.get_initial_length()
-Lp = params['Lp']
-Le = params['Le']
-A = (Lp-Le)**2 / np.pi
-alpha_max = np.array(geometry.GetAlphaMaxByArea(A, Le, Lp), dtype=np.float64)
-m = params['m']
+def test():
+    alpha_0 = geometry.get_alpha0() #NUMPY float64
+    # alpha_init = torch.tensor(alpha_0+1e-4, dtype=float, requires_grad=True) #For geometry1 and energy1
+    # alpha_0 = torch.clone(alpha_init) #For geometry1 and energy1
+    alpha_init = np.array(alpha_0+1e-4, dtype=np.float64)
+    alpha_0 = np.copy(alpha_init)
+    p_init = 0
+    Q_init = 0
+    params = parameters.param
+    Lv = geometry.get_initial_length()
+    Lp = params['Lp']
+    Le = params['Le']
+    A = (Lp-Le)**2 / np.pi
+    alpha_max = np.array(geometry.GetAlphaMaxByArea(A, Le, Lp), dtype=np.float64)
+    m = params['m']
 
-#Sys ID estimated parameters:
-k = 458.18
-b = 0.00031737
-r= 5.56e+07
+    #Sys ID estimated parameters:
+    k = 458.18
+    b = 0.00031737
+    r= 5.56e+07
 
-# alpha_dot, p_dot, Q_dot, le, lp, q = update_open_loop_state(alpha=alpha_init, p=p_init, Q=Q_init, Lv=Lv, Lp=Lp, A=A, alpha_max=alpha_max, alpha0=alpha_init, m=m, r=r, b=b, k=k)
-V_amp = 6000
-bias = 3000
-freq = 0.1
-sim_time = 20
-time_step = 0.0001
+    # alpha_dot, p_dot, Q_dot, le, lp, q = update_open_loop_state(alpha=alpha_init, p=p_init, Q=Q_init, Lv=Lv, Lp=Lp, A=A, alpha_max=alpha_max, alpha0=alpha_init, m=m, r=r, b=b, k=k)
+    V_amp = 6000
+    bias = 3000
+    freq = 0.1
+    sim_time = 20
+    time_step = 0.0001
 
-q_out = run_open_loop(total_time=sim_time, time_step=time_step, bias=bias, amp=V_amp, freq=freq, alpha=alpha_init, p=p_init, Q=Q_init, Lv=Lv, Lp=Lp, A=A, alpha_max=alpha_max, alpha0=alpha_0, m=m, r=r, b=b, k=k)
-print(f"q_out:{q_out[-1]}")
+    q_out = run_open_loop(total_time=sim_time, time_step=time_step, bias=bias, amp=V_amp, freq=freq, alpha=alpha_init, p=p_init, Q=Q_init, Lv=Lv, Lp=Lp, A=A, alpha_max=alpha_max, alpha0=alpha_0, m=m, r=r, b=b, k=k)
+    print(f"q_out:{q_out[-1]}")
 
-np.savetxt('modeldata.txt', q_out, delimiter=',') #Exporting data to file
+    np.savetxt('modeldata.txt', q_out, delimiter=',') #Exporting data to file
 
-end = time.time()
-print(end - start)
+    end = time.time()
+    print(end - start)
 
 #PSUtil matches mprof.
 #Top & Activity monitor will show much higher mem usage for tensors (bc memory being reserved for Python interpreter process)
