@@ -35,7 +35,7 @@ The model has different geometry and energy modules for (a) using tensors and au
         Note: Symbolic differentiation (just the computation for derivatives) adds around 11s to the simulation!
 
 ## Instructions to Run:
-1. Specify system parameters in [param.py](param.py)
+1. Specify system parameters in [parameters.py](parameters.py)
 2. Set up simulation in [open_loop.py](open_loop.py), line 180 onwards: set voltage, frequency, length of iteration, sample time step, export file name)
 3. Data will be exported to file ['modeldata.txt'](modeldata.txt)
 4. Use [compare.py](compare.py) to plot data (or use custom scripts for other tasks)
