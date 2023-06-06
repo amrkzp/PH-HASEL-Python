@@ -9,7 +9,7 @@ The model has different geometry and energy modules for (a) using tensors and au
 1. Accuracy comparison between MATLAB and Python model:
     Maximum error between the Python and MATLAB continuous model is < 2 * 10<sup>-7</sup>. For the most part, error is much below a 0.1% tolerance
 
-![Python Model Accuracy.png](https://github.com/MadhavL/PH-HASEL-Python/blob/main/Python%20Model%20Accuracy.png)
+![Python Model Accuracy.png](https://github.com/MadhavL/PH-HASEL-Python/blob/main/Images/Python%20Model%20Accuracy.png)
     
 2. Run time & Memory usage for different approaches (20 second prediction, 0.0001s sample time = 200,000 samples):
     1. With tensors and autograd (slowest):
@@ -18,7 +18,7 @@ The model has different geometry and energy modules for (a) using tensors and au
     
         Peak memory usage: 990 MiB
 
-    ![Memory usage with tensors](https://github.com/MadhavL/PH-HASEL-Python/blob/main/With%20Tensors.png)
+    ![Memory usage with tensors](https://github.com/MadhavL/PH-HASEL-Python/blob/main/Images/With%20Tensors.png)
     
     2. Without tensors, with symbolic differentiation:
     
@@ -26,7 +26,7 @@ The model has different geometry and energy modules for (a) using tensors and au
     
         Peak memory usage: 67 MiB (15X less)
 
-    ![Memory usage without tensors](https://github.com/MadhavL/PH-HASEL-Python/blob/main/Without%20Tensors%20With%20Symbolic.png)
+    ![Memory usage without tensors](https://github.com/MadhavL/PH-HASEL-Python/blob/main/Images/Without%20Tensors%20With%20Symbolic.png)
     
     3. Without tensors, without symbolic differentiation:
     
