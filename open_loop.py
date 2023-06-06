@@ -40,7 +40,7 @@ Question: where do initial values for Q, p and alpha come from? [Alpha initial c
 
 #------------------------------------------------------------------------------------------------------------------------#
 import time
-import geometry3 as geometry
+import geometry3 as geometry #CHANGE FOR TENSORS
 import energy2 as energy
 import numpy as np
 import parameters
@@ -93,7 +93,7 @@ def update_open_loop_state(alpha, p, Q, Lv, Lp, A, alpha_max, alpha0, m, r, b, k
     
     #Calculate the final dHdx, derivatives of the system H (energy) wrt to the state variables. Defined in paper 2, equation (14)
     # x_dot = torch.matmul(J_R, dH_dx)
-    x_dot = np.dot(J_R, dH_dx)
+    x_dot = np.dot(J_R, dH_dx) #CHANGE FOR TENSORS
 
     del J_R
     del dH_dx
@@ -147,7 +147,7 @@ def run_open_loop(total_time, time_step, bias, amp, freq, alpha, p, Q, Lv, Lp, A
 
         # alpha.data = alpha.data + alpha_dot * time_step #For geometry1 and energy1 modules (tensors)
         #alpha is np array, alpha_dot is float
-        alpha = alpha + alpha_dot * time_step
+        alpha = alpha + alpha_dot * time_step #CHANGE FOR TENSORS
         p += p_dot * time_step
         Q += (Q_dot + V[i]/r) * time_step
         
@@ -179,8 +179,8 @@ def run_open_loop(total_time, time_step, bias, amp, freq, alpha, p, Q, Lv, Lp, A
 
 def test():
     alpha_0 = geometry.get_alpha0() #NUMPY float64
-    # alpha_init = torch.tensor(alpha_0+1e-4, dtype=float, requires_grad=True) #For geometry1 and energy1
-    # alpha_0 = torch.clone(alpha_init) #For geometry1 and energy1
+    # alpha_init = torch.tensor(alpha_0+1e-4, dtype=float, requires_grad=True) #CHANGE FOR TENSORS
+    # alpha_0 = torch.clone(alpha_init) #CHANGE FOR TENSORS
     alpha_init = np.array(alpha_0+1e-4, dtype=np.float64)
     alpha_0 = np.copy(alpha_init)
     p_init = 0
