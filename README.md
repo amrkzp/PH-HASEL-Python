@@ -13,23 +13,29 @@ The model has different geometry and energy modules for (a) using tensors and au
     
 2. Run time & Memory usage for different approaches (20 second prediction, 0.0001s sample time = 200,000 samples):
     1. With tensors and autograd (slowest):
-    Run time: 137.2 seconds
-    Peak memory usage: 990 MiB
+   
+        Run time: 137.2 seconds
+    
+        Peak memory usage: 990 MiB
 
     ![Memory usage with tensors](https://github.com/MadhavL/PH-HASEL-Python/blob/main/With%20Tensors.png)
     
     2. Without tensors, with symbolic differentiation:
-    Run time: 18.7 seconds (7X faster)
-    Peak memory usage: 67 MiB (15X less)
+    
+        Run time: 18.7 seconds (7X faster)
+    
+        Peak memory usage: 67 MiB (15X less)
 
     ![Memory usage without tensors](https://github.com/MadhavL/PH-HASEL-Python/blob/main/Without%20Tensors%20With%20Symbolic.png)
     
     3. Without tensors, without symbolic differentiation:
-    Run time: 7.5 seconds
-    Note: Symbolic differentiation (just the computation for derivatives) adds around 11s to the simulation!
+    
+        Run time: 7.5 seconds
+        
+        Note: Symbolic differentiation (just the computation for derivatives) adds around 11s to the simulation!
 
 ## Instructions to Run:
-1. Specify system parameters in [param.py](open_loop.py)
+1. Specify system parameters in [param.py](param.py)
 2. Set up simulation in [open_loop.py](open_loop.py), line 180 onwards: set voltage, frequency, length of iteration, sample time step, export file name)
-3. Data will be exported to file ['modeldata.txt'](open_loop.py)'modeldata.txt'
-4. Use [compare.py](open_loop.py) to plot data (or use custom scripts for other tasks)
+3. Data will be exported to file ['modeldata.txt'](modeldata.txt)
+4. Use [compare.py](compare.py) to plot data (or use custom scripts for other tasks)
