@@ -44,6 +44,8 @@ import geometry.geometry3 as geometry #CHANGE FOR TENSORS
 import energy.energy2 as energy
 import numpy as np
 import parameters
+import matplotlib.pyplot as plt
+import sys
 # import torch
 
 #Tools for debugging memory & time performance
@@ -52,8 +54,18 @@ import parameters
 # from memory_profiler import profile
 # import gc #For cleanup
 
+
 #Measuring script running time
 start = time.time()
+
+"""Note on discretization sample time:
+Tradeoff between accuracy & run-time:
+Recommended:
+Highest accuracy: 1e-4
+Compromise: 2e-4
+Lower accuracy/faster: 4e-4
+See image 'Discretization Error' in Images
+  """
 
 #Returns alpha_dot, p_dot, Q_dot, le, lp, q
 def update_open_loop_state(alpha, p, Q, Lv, Lp, A, alpha_max, alpha0, m, r, b, k, debug):
@@ -181,7 +193,7 @@ def generate_sine_chirp(total_time, time_step, freq, bias, amp):
     return V
 
 #Test model with a sine chirp
-def test():
+def test(sim_time, time_step, V, output_file):
     alpha_0 = geometry.get_alpha0() #NUMPY float64
     # alpha_init = torch.tensor(alpha_0+1e-4, dtype=float, requires_grad=True) #CHANGE FOR TENSORS
     # alpha_0 = torch.clone(alpha_init) #CHANGE FOR TENSORS
@@ -195,7 +207,7 @@ def test():
     Le = params['Le']
     A = (Lp-Le)**2 / np.pi
     alpha_max = np.array(geometry.GetAlphaMaxByArea(A, Le, Lp), dtype=np.float64)
-    m = params['m']
+    m = params['m'] + params['m_hasel']
 
     #Sys ID estimated parameters:
     k = 458.18
@@ -203,25 +215,58 @@ def test():
     r= 5.56e+07
 
     # alpha_dot, p_dot, Q_dot, le, lp, q = update_open_loop_state(alpha=alpha_init, p=p_init, Q=Q_init, Lv=Lv, Lp=Lp, A=A, alpha_max=alpha_max, alpha0=alpha_init, m=m, r=r, b=b, k=k)
-    V_amp = 6000
-    bias = 3000
-    freq = 0.1
-    
-    sim_time = 20
-    time_step = 0.0001
-    
-    V = generate_sine_chirp(sim_time, time_step, freq, bias, V_amp)
 
     q_out = run_open_loop(total_time=sim_time, time_step=time_step, V=V, alpha=alpha_init, p=p_init, Q=Q_init, Lv=Lv, Lp=Lp, A=A, alpha_max=alpha_max, alpha0=alpha_0, m=m, r=r, b=b, k=k)
+    q_out *= 1000 #Since MATLAB model and reference data add 1000 gain
     print(f"q_out:{q_out[-1]}")
 
-    np.savetxt('modeldata.txt', q_out, delimiter=',') #Exporting data to file
+    np.savetxt('./Data/' + output_file, q_out, delimiter=',') #Exporting data to file
 
     end = time.time()
     print(end - start)
+    return q_out
+
+#Plot output of a simulation compared to reference data
+def plot_simulation_output(sim_data, sim_time, sample_time_step):
+    time_data = np.arange(0, sim_time, sample_time_step) #Collected over 20s period, with 0.0001 sample size
+    fig, axs = plt.subplots(1)
+    axs.plot(time_data, sim_data, label='Model Simulation')
+    axs.set(xlabel='Time', ylabel='Actuator Stroke')
+    axs.legend()
+    plt.show()
 
 if __name__ == '__main__':
-    test()
+    #Note: for scripts, could remove UI and use command line args
+
+    sim_time = int(input("Simulation time (int): "))
+    time_step = float(input("Sample time step: "))
+
+    test_method = input("Test type: (sine or step): ")
+
+    # V = 0
+
+    if (test_method == "sine"):
+        #For sine test:
+        V_amp = 6000
+        bias = 3000
+        freq = 0.1
+        V = generate_sine_chirp(sim_time, time_step, freq, bias, V_amp)
+
+    elif (test_method == "step"):
+        #Step test
+        V = np.loadtxt("./Data/Step_Ref_Voltage.txt")
+        V = np.repeat(V, 5) #To interplolate from 0.0005 to 0.0001s samples
+
+    else:
+        print("Invalid method")
+        sys.exit()
+    
+    output_file = input("Output File Name: ") + '.txt'
+    debug = input("Show plot? (y/n): ")
+    print("Running...")
+    sim_data = test(sim_time, time_step, V, output_file)
+    if (debug == 'y'):
+        plot_simulation_output(sim_data, sim_time, time_step)
 
 #PSUtil matches mprof.
 #Top & Activity monitor will show much higher mem usage for tensors (bc memory being reserved for Python interpreter process)
