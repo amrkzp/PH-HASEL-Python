@@ -52,6 +52,7 @@ The model has different geometry and energy modules for (a) using tensors and au
 5. All data input and output files should be in the ./Data folder
 6. The fit displayed is based on NRMSE (Normalized Root Mean Squared Error)
 7. Current naming convention for data files: "experiment type (sine, step)"_"source (Sim = MATLAB, Model = Python, Ref = Reference Data)"_"(Optional) Modifiers to describe modifications to data or other characteristics"_"Discretization time (tn where n is in 0.n ms discretization time)"
+8. When specifying experiments, sine is a 6000V + 3000V bias sine chirp for 20s at 0.1HZ, and step is a 440s step voltage experiment. Custom means you have the input voltage data yourself (at 0.1ms sample)
 
 
 ## Instructions to Run:

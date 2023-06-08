@@ -8,12 +8,22 @@ import time
 from scipy import optimize
 import sys
 import math
+import signal
 
 #Globals to track number of iterations, time and loss for optimizer (not needed if we don't want to track optimization progress)
 Niter = 0
 time_track = []
 loss_track = []
 start_time = 0
+
+def interrupt_handler(sig, frame):
+    #Plot optimization graph
+    fig, axs = plt.subplots(1)
+    axs.plot(time_track, loss_track)
+    axs.set(xlabel='Time', ylabel='MSE Loss')
+    plt.yscale('log')
+    plt.show()
+    sys.exit()
 
 #Calculate the mse_loss from running the specified simulation, wrt reference data
 def mse_loss(sys_parameters, sim_time, time_step, V, reference_data, plot_data):
@@ -207,6 +217,7 @@ if __name__ == '__main__':
         scale_down = round(time_step/0.0001)
         if (scale_down > 1):
             V = V[::scale_down]
+    signal.signal(signal.SIGINT, interrupt_handler)
     print("Running sys id...")
     sys_id(sim_time, time_step, reference_data, V, maxevals, debug)
     
