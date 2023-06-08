@@ -40,32 +40,20 @@ Question: where do initial values for Q, p and alpha come from? [Alpha initial c
 
 #------------------------------------------------------------------------------------------------------------------------#
 import time
-import geometry.geometry3 as geometry #CHANGE FOR TENSORS
+import geometry.geometry3 as geometry #CHANGE to geometry.geometry for tensors
 import energy.energy2 as energy
 import numpy as np
 import parameters
 import matplotlib.pyplot as plt
 import sys
-# import torch
+import math
+# import torch #UNCOMMENT for tensors
 
 #Tools for debugging memory & time performance
 # import os
 # import psutil
 # from memory_profiler import profile
 # import gc #For cleanup
-
-
-#Measuring script running time
-start = time.time()
-
-"""Note on discretization sample time:
-Tradeoff between accuracy & run-time:
-Recommended:
-Highest accuracy: 1e-4
-Compromise: 2e-4
-Lower accuracy/faster: 4e-4
-See image 'Discretization Error' in Images
-  """
 
 #Returns alpha_dot, p_dot, Q_dot, le, lp, q
 def update_open_loop_state(alpha, p, Q, Lv, Lp, A, alpha_max, alpha0, m, r, b, k, debug):
@@ -82,7 +70,7 @@ def update_open_loop_state(alpha, p, Q, Lv, Lp, A, alpha_max, alpha0, m, r, b, k
     lp = geometry.alpha_to_lp(A,alpha)
     # print(f"lp: {type(lp)}") #Debug
 
-    # le, d_le_d_alpha = geometry.alpha_to_le(Lp, A,alpha) # For geometry1 module
+    # le, d_le_d_alpha = geometry.alpha_to_le(Lp, A,alpha) #Uncomment and replace below if using tensors
     le, d_le_d_alpha = geometry.alpha_to_le(Lp, A,alpha, lp)
 
     #Both le and d_le_d_alpha are numpy arrays
@@ -104,8 +92,8 @@ def update_open_loop_state(alpha, p, Q, Lv, Lp, A, alpha_max, alpha0, m, r, b, k
     #     print(f"dHdq: {dH_dx[0].item()}, dHdp: {dH_dx[1].item()}, dHdQ: {dH_dx[2].item()}")
     
     #Calculate the final dHdx, derivatives of the system H (energy) wrt to the state variables. Defined in paper 2, equation (14)
-    # x_dot = torch.matmul(J_R, dH_dx)
-    x_dot = np.dot(J_R, dH_dx) #CHANGE FOR TENSORS
+    # x_dot = torch.matmul(J_R, dH_dx) #Uncomment and replace below line if using tensors
+    x_dot = np.dot(J_R, dH_dx)
 
     del J_R
     del dH_dx
@@ -133,6 +121,7 @@ def update_open_loop_state(alpha, p, Q, Lv, Lp, A, alpha_max, alpha0, m, r, b, k
 
 # @profile
 # Run open loop model with input voltage V
+# Note: no matter what sample time is set, we will always bring the resulting q_out up to 0.0001s sample time to regularize all our data (since reference data / MATLAB sim is in 0.1ms)
 def run_open_loop(total_time, time_step, V, alpha, p, Q, Lv, Lp, A, alpha_max, alpha0, m, r, b, k):
     num_iterations = round(total_time / time_step)
     # print(f"V = {V}") #Debug
@@ -156,9 +145,9 @@ def run_open_loop(total_time, time_step, V, alpha, p, Q, Lv, Lp, A, alpha_max, a
 
         q_out[i] = q
 
-        # alpha.data = alpha.data + alpha_dot * time_step #For geometry1 and energy1 modules (tensors)
+        # alpha.data = alpha.data + alpha_dot * time_step #Uncomment and replace below line if using tensors
         #alpha is np array, alpha_dot is float
-        alpha = alpha + alpha_dot * time_step #CHANGE FOR TENSORS
+        alpha = alpha + alpha_dot * time_step
         p += p_dot * time_step
         Q += (Q_dot + V[i]/r) * time_step
         
@@ -182,6 +171,11 @@ def run_open_loop(total_time, time_step, V, alpha, p, Q, Lv, Lp, A, alpha_max, a
         # gc.collect() #Forcing garbage collector for mem cleanup
 
     del V
+    repeat = round(time_step/0.0001)
+    #Bringing all the data to 0.0001s time step (by repeating/hold method (not linear interpolation), if sample time was lower) 
+    if (repeat != 1):
+        q_out = np.repeat(q_out, repeat)
+    q_out *= 1000 #Since MATLAB model and reference data add 1000 gain
     return q_out #, alpha_dot_out, p_dot_out, Q_dot_out, p_out, Q_out, alpha_out #optionally collecting more data
 
 
@@ -194,8 +188,11 @@ def generate_sine_chirp(total_time, time_step, freq, bias, amp):
 
 #Test model with a sine chirp
 def test(sim_time, time_step, V, output_file):
+    #Measuring script running time
+    start = time.time()
+    
     alpha_0 = geometry.get_alpha0() #NUMPY float64
-    # alpha_init = torch.tensor(alpha_0+1e-4, dtype=float, requires_grad=True) #CHANGE FOR TENSORS
+    # alpha_init = torch.tensor(alpha_0+1e-4, dtype=float, requires_grad=True) #Uncomment these 2 lines and replace below lines if using tensors
     # alpha_0 = torch.clone(alpha_init) #CHANGE FOR TENSORS
     alpha_init = np.array(alpha_0+1e-4, dtype=np.float64)
     alpha_0 = np.copy(alpha_init)
@@ -209,16 +206,11 @@ def test(sim_time, time_step, V, output_file):
     alpha_max = np.array(geometry.GetAlphaMaxByArea(A, Le, Lp), dtype=np.float64)
     m = params['m'] + params['m_hasel']
 
-    #Sys ID estimated parameters:
-    k = 458.18
-    b = 0.00031737
-    r= 5.56e+07
-
     # alpha_dot, p_dot, Q_dot, le, lp, q = update_open_loop_state(alpha=alpha_init, p=p_init, Q=Q_init, Lv=Lv, Lp=Lp, A=A, alpha_max=alpha_max, alpha0=alpha_init, m=m, r=r, b=b, k=k)
 
-    q_out = run_open_loop(total_time=sim_time, time_step=time_step, V=V, alpha=alpha_init, p=p_init, Q=Q_init, Lv=Lv, Lp=Lp, A=A, alpha_max=alpha_max, alpha0=alpha_0, m=m, r=r, b=b, k=k)
-    q_out *= 1000 #Since MATLAB model and reference data add 1000 gain
-    print(f"q_out:{q_out[-1]}")
+    q_out = run_open_loop(total_time=sim_time, time_step=time_step, V=V, alpha=alpha_init, p=p_init, Q=Q_init, Lv=Lv, Lp=Lp, A=A, alpha_max=alpha_max, alpha0=alpha_0, m=m, r=params['r'], b=params['b'], k=params['k'])
+        
+    print(f"q:{q_out[-1]}")
 
     np.savetxt('./Data/' + output_file, q_out, delimiter=',') #Exporting data to file
 
@@ -227,8 +219,8 @@ def test(sim_time, time_step, V, output_file):
     return q_out
 
 #Plot output of a simulation compared to reference data
-def plot_simulation_output(sim_data, sim_time, sample_time_step):
-    time_data = np.arange(0, sim_time, sample_time_step) #Collected over 20s period, with 0.0001 sample size
+def plot_simulation_output(sim_data, sim_time, time_step):
+    time_data = np.arange(0, sim_time, time_step) #Collected over 20s period, with 0.0001 sample size
     fig, axs = plt.subplots(1)
     axs.plot(time_data, sim_data, label='Model Simulation')
     axs.set(xlabel='Time', ylabel='Actuator Stroke')
@@ -236,38 +228,73 @@ def plot_simulation_output(sim_data, sim_time, sample_time_step):
     plt.show()
 
 if __name__ == '__main__':
-    #Note: for scripts, could remove UI and use command line args
+    args = sys.argv
+    if (len(args) < 2):
+            print("Usage: open_loop.py -u OR \nopen_loop.py [sim_time] [time_step] [test_method] [output_file] [debug]")
+            sys.exit()
 
-    sim_time = int(input("Simulation time (int): "))
-    time_step = float(input("Sample time step: "))
+    if str(args[1]) == '-u':
+        #Interactive User Input enabled
+        sim_time = int(input("Simulation time (int): "))
+        time_step = float(input("Sample time step: "))
+        if (not math.isclose(0, (sim_time / time_step) - int(sim_time / time_step))):
+                print("Sim time and sample time do not match, exiting...")
+                sys.exit()
+        test_method = input("Test type: (sine or step): ")
+        output_file = input("Output File Name: ") + '.txt'
+        debug = input("Show plot? (y/n): ")
 
-    test_method = input("Test type: (sine or step): ")
+    else:
+        #CLI
+        if (len(args) < 6):
+            print("Usage: open_loop.py [sim_time] [time_step] [test_method] [output_file] [debug] [/custom_data_file]")
+            sys.exit() 
+        else:
+            sim_time = int(args[1])
+            time_step = float(args[2])
+            if (not math.isclose(0, (sim_time / time_step) - int(sim_time / time_step))):
+                print("Sim time and sample time do not match, exiting...")
+                sys.exit()
+            test_method = str(args[3])
+            output_file = str(args[4]) + '.txt'
+            debug = str(args[5])
 
-    # V = 0
-
+    #Sine test with 6000V amplitude, 3000V bias, 0.1Hz frequency (specified sample time)
     if (test_method == "sine"):
-        #For sine test:
         V_amp = 6000
         bias = 3000
         freq = 0.1
-        V = generate_sine_chirp(sim_time, time_step, freq, bias, V_amp)
+        V = generate_sine_chirp(sim_time, time_step, freq, bias, V_amp) #Generates V at the specified sample time
 
+    #440s step voltage test (0.1ms sample time)
     elif (test_method == "step"):
-        #Step test
         V = np.loadtxt("./Data/Step_Ref_Voltage.txt")
-        V = np.repeat(V, 5) #To interplolate from 0.0005 to 0.0001s samples
+        #If our sample time for simulation is > 0.1ms, we need to scale down the input voltage for the simulation
+        scale_down = round(time_step/0.0001)
+        if (scale_down > 1):
+            V = V[::scale_down]
+
+    #Custom input data
+    elif (test_method == "custom"):
+        if str(args[1]) == '-u':
+            file_name = input("Enter file name (without ext) for voltage data (NOTE: SHOULD BE 0.1ms sample time):")
+        else:
+            if len(args) != 7:
+                print("Custom data specified, but no file provided")
+                sys.exit()
+            file_name = args[6]
+        V = np.loadtxt("./Data/" + file_name + ".txt") #Input data must be at 0.1ms sample time
+
+        #If our simulation sample time is > 0.1ms, we need to scale down the input voltage for the simulation
+        scale_down = round(time_step/0.0001)
+        if (scale_down > 1):
+            V = V[::scale_down]
 
     else:
         print("Invalid method")
         sys.exit()
     
-    output_file = input("Output File Name: ") + '.txt'
-    debug = input("Show plot? (y/n): ")
     print("Running...")
     sim_data = test(sim_time, time_step, V, output_file)
     if (debug == 'y'):
-        plot_simulation_output(sim_data, sim_time, time_step)
-
-#PSUtil matches mprof.
-#Top & Activity monitor will show much higher mem usage for tensors (bc memory being reserved for Python interpreter process)
-#------------------------------------------------------------------------------------------------------------------------------#
+        plot_simulation_output(sim_data, sim_time, 0.0001)
