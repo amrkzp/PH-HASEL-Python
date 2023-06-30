@@ -1,0 +1,38 @@
+Step experiment, original sample, look back 500, 10 epochs, sigmoid
+==========================================================================================
+Layer (type:depth-idx)                   Output Shape              Param #
+==========================================================================================
+├─Flatten: 1-1                           [-1, 1000]                --
+├─Sequential: 1-2                        [-1, 1]                   --
+|    └─Linear: 2-1                       [-1, 64]                  64,064
+|    └─ReLU: 2-2                         [-1, 64]                  --
+|    └─BatchNorm1d: 2-3                  [-1, 64]                  128
+|    └─Linear: 2-4                       [-1, 64]                  4,160
+|    └─ReLU: 2-5                         [-1, 64]                  --
+|    └─BatchNorm1d: 2-6                  [-1, 64]                  128
+|    └─Linear: 2-7                       [-1, 64]                  4,160
+|    └─ReLU: 2-8                         [-1, 64]                  --
+|    └─BatchNorm1d: 2-9                  [-1, 64]                  128
+|    └─Linear: 2-10                      [-1, 64]                  4,160
+|    └─ReLU: 2-11                        [-1, 64]                  --
+|    └─BatchNorm1d: 2-12                 [-1, 64]                  128
+|    └─Linear: 2-13                      [-1, 1]                   65
+|    └─Sigmoid: 2-14                     [-1, 1]                   --
+==========================================================================================
+Total params: 77,121
+Trainable params: 77,121
+Non-trainable params: 0
+Total mult-adds (M): 0.15
+==========================================================================================
+Input size (MB): 38.15
+Forward/backward pass size (MB): 0.00
+Params size (MB): 0.29
+Estimated Total Size (MB): 38.45
+==========================================================================================
+Learning rate: 0.01
+Epochs: 10
+Batch size: 10000
+Look back: 500
+Weight Decay: 0
+Momentum: 0.9
+Train ratio: 0.89
